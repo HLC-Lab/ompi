@@ -1033,7 +1033,7 @@ int ompi_coll_base_allreduce_intra_redscat_allgather(
     int err = MPI_SUCCESS;
     ptrdiff_t lb, extent, dsize, gap = 0;
     ompi_datatype_get_extent(dtype, &lb, &extent);
-    dsize = opal_datatype_span(&dtype->super, count, &gap);
+    dsize = opal_datatype_span(&dtype->super, count >> 1, &gap);
 
     /* Temporary buffer for receiving messages */
     char *tmp_buf = NULL;
@@ -1080,14 +1080,14 @@ int ompi_coll_base_allreduce_intra_redscat_allgather(
              */
             err = ompi_coll_base_sendrecv(rbuf, count_lhalf, dtype, rank - 1,
                                           MCA_COLL_BASE_TAG_ALLREDUCE,
-                                          (char *)tmp_buf + (ptrdiff_t)count_lhalf * extent,
+                                          (char *)tmp_buf,
                                           count_rhalf, dtype, rank - 1,
                                           MCA_COLL_BASE_TAG_ALLREDUCE, comm,
                                           MPI_STATUS_IGNORE, rank);
             if (MPI_SUCCESS != err) { goto cleanup_and_return; }
 
             /* Reduce on the right half of the buffers (result in rbuf) */
-            ompi_op_reduce(op, (char *)tmp_buf + (ptrdiff_t)count_lhalf * extent,
+            ompi_op_reduce(op, (char *)tmp_buf,
                            (char *)rbuf + count_lhalf * extent, count_rhalf, dtype);
 
             /* Send the right half to the left neighbor */
@@ -1189,14 +1189,13 @@ int ompi_coll_base_allreduce_intra_redscat_allgather(
             err = ompi_coll_base_sendrecv((char *)rbuf + (ptrdiff_t)sindex[step] * extent,
                                           scount[step], dtype, dest,
                                           MCA_COLL_BASE_TAG_ALLREDUCE,
-                                          (char *)tmp_buf + (ptrdiff_t)rindex[step] * extent,
-                                          rcount[step], dtype, dest,
+                                          (char *)tmp_buf, rcount[step], dtype, dest,
                                           MCA_COLL_BASE_TAG_ALLREDUCE, comm,
                                           MPI_STATUS_IGNORE, rank);
             if (MPI_SUCCESS != err) { goto cleanup_and_return; }
 
             /* Local reduce: rbuf[] = tmp_buf[] <op> rbuf[] */
-            ompi_op_reduce(op, (char *)tmp_buf + (ptrdiff_t)rindex[step] * extent,
+            ompi_op_reduce(op, (char *)tmp_buf,
                            (char *)rbuf + (ptrdiff_t)rindex[step] * extent,
                            rcount[step], dtype);
 
@@ -1481,18 +1480,19 @@ static inline void my_reduce_indexed_dtype(ompi_op_t *op, const void *source, vo
 }
 
 
-static inline void my_reduce(ompi_op_t *op, const void *source, void *target, const unsigned char *bitmap, int adj_size, const size_t small_block_count, const int split_rank, ompi_datatype_t *dtype){
-  // NOTE: try to use ompi_datatype_get_single_predefined_type_from_args(dtype)
-
-  if(ompi_datatype_is_predefined(dtype)){
-    my_reduce_copy(op, source, target, bitmap, adj_size, small_block_count, split_rank, dtype);
-    return;
-  }
-  else{
-    my_reduce_indexed_dtype(op, source, target, bitmap, adj_size, small_block_count, split_rank, ompi_datatype_get_single_predefined_type_from_args(dtype));
-    return;
-  }
-}
+// static inline void my_reduce(ompi_op_t *op, const void *source, void *target, const unsigned char *bitmap, int adj_size, const size_t small_block_count, const int split_rank, ompi_datatype_t *dtype){
+//   // NOTE: try to use ompi_datatype_get_single_predefined_type_from_args(dtype)
+//
+//   if(ompi_datatype_is_predefined(dtype)){
+//     my_reduce_copy(op, source, target, bitmap, adj_size, small_block_count, split_rank, dtype);
+//     return;
+//   }
+//   else{
+//     
+//     my_reduce_indexed_dtype(op, source, target, bitmap, adj_size, small_block_count, split_rank, ompi_datatype_get_single_predefined_type_from_args(dtype));
+//     return;
+//   }
+// }
 
 
 static inline void copy_chunks(const void *source, void *target, const unsigned char *bitmap, int adj_size, const size_t small_block_count, const int split_rank, ompi_datatype_t *dtype) {
@@ -1613,7 +1613,7 @@ int ompi_coll_base_allreduce_swing(const void *send_buf, void *recv_buf, size_t 
   tmpsend = inplacebuf;
   tmprecv = (char*) recv_buf;
   
-  int adjsize, extra_ranks, new_rank = rank, loop_flag = 0; // needed to handle not power of 2 cases
+  int adjsize, extra_ranks, new_rank = rank; // needed to handle not power of 2 cases
 
   //Determine nearest power of two less than or equal to size
   int steps = opal_hibit(size, comm->c_cube_dim + 1);
@@ -1624,8 +1624,7 @@ int ompi_coll_base_allreduce_swing(const void *send_buf, void *recv_buf, size_t 
 
   //Number of nodes that exceed max(2^n)< size
   extra_ranks = size - adjsize;
-  int is_power_of_two = size >> 1 == adjsize;
-
+  int is_power_of_two = size  == adjsize;
 
   // First part of computation to get a 2^n number of nodes.
   // What happens is that first #extra_rank even nodes sends their
@@ -1638,7 +1637,7 @@ int ompi_coll_base_allreduce_swing(const void *send_buf, void *recv_buf, size_t 
     if (0 == (rank % 2)) {
       ret = MCA_PML_CALL(send(tmpsend, count, dtype, (rank + 1), MCA_COLL_BASE_TAG_ALLREDUCE, MCA_PML_BASE_SEND_STANDARD, comm));
       if (MPI_SUCCESS != ret) { line = __LINE__; goto error_hndl; }
-      loop_flag = 1;
+      new_rank = -1;
     } else {
       ret = MCA_PML_CALL(recv(tmprecv, count, dtype, (rank - 1), MCA_COLL_BASE_TAG_ALLREDUCE, comm, MPI_STATUS_IGNORE));
       if (MPI_SUCCESS != ret) { line = __LINE__; goto error_hndl; }
@@ -1651,18 +1650,10 @@ int ompi_coll_base_allreduce_swing(const void *send_buf, void *recv_buf, size_t 
   // Actual allreduce computation for general cases
   int s, vdest, dest;
   for (s = 0; s < steps; s++){
-    if (loop_flag) break;
+    if (new_rank < 0) break;
     vdest = pi(new_rank, s, adjsize);
 
-    if (is_power_of_two) {
-      dest = vdest;
-    } else {
-      if (vdest < extra_ranks) {
-        dest = (vdest << 1) + 1 ;
-      } else {
-        dest = vdest + extra_ranks;
-      }
-    }
+    dest = is_power_of_two ? vdest : (vdest < extra_ranks) ? (vdest << 1) + 1 : vdest + extra_ranks;
 
     ret = ompi_coll_base_sendrecv_actual(tmpsend, count, dtype, dest, MCA_COLL_BASE_TAG_ALLREDUCE, tmprecv, count, dtype, dest, MCA_COLL_BASE_TAG_ALLREDUCE, comm, MPI_STATUS_IGNORE);
     if (MPI_SUCCESS != ret) { line = __LINE__; goto error_hndl; }
@@ -1680,13 +1671,13 @@ int ompi_coll_base_allreduce_swing(const void *send_buf, void *recv_buf, size_t 
   // Final results is sent to nodes that are not included in general computation
   // (general computation loop requires 2^n nodes).
   if (rank < (2 * extra_ranks)){
-    if (!loop_flag){
-      ret = MCA_PML_CALL(send(tmpsend, count, dtype, (rank - 1), MCA_COLL_BASE_TAG_ALLREDUCE, MCA_PML_BASE_SEND_STANDARD, comm));
-      if (MPI_SUCCESS != ret) { line = __LINE__; goto error_hndl; }
-    } else {
+    if (new_rank < 0){
       ret = MCA_PML_CALL(recv(recv_buf, count, dtype, (rank + 1), MCA_COLL_BASE_TAG_ALLREDUCE, comm, MPI_STATUS_IGNORE));
       if (MPI_SUCCESS != ret) { line = __LINE__; goto error_hndl; }
       tmpsend = (char*)recv_buf;
+    } else {
+      ret = MCA_PML_CALL(send(tmpsend, count, dtype, (rank - 1), MCA_COLL_BASE_TAG_ALLREDUCE, MCA_PML_BASE_SEND_STANDARD, comm));
+      if (MPI_SUCCESS != ret) { line = __LINE__; goto error_hndl; }
     }
   }
 
@@ -1786,7 +1777,7 @@ int ompi_coll_base_allreduce_swing_rabenseifner_memcpy(
 
     ompi_coll_base_sendrecv(cp_buf, send_count, dtype, vdest, MCA_COLL_BASE_TAG_ALLREDUCE, tmp_buf, recv_count, dtype, vdest, MCA_COLL_BASE_TAG_ALLREDUCE, comm, MPI_STATUS_IGNORE, rank);
     
-    my_reduce(op, tmp_buf, recv_buf, r_bitmap + bitmap_offset, adj_size, small_block_count, split_rank, dtype);
+    my_reduce_copy(op, tmp_buf, recv_buf, r_bitmap + bitmap_offset, adj_size, small_block_count, split_rank, dtype);
  
     bitmap_offset += adj_size;
   }
@@ -1901,7 +1892,7 @@ int ompi_coll_base_allreduce_swing_rabenseifner_dt(
      
     ompi_coll_base_sendrecv(recv_buf, 1, ind_dtype[0 + dtype_offset], vdest, MCA_COLL_BASE_TAG_ALLREDUCE, tmp_buf, 1, ind_dtype[1 + dtype_offset], vdest, MCA_COLL_BASE_TAG_ALLREDUCE, comm, MPI_STATUS_IGNORE, rank);
 
-    my_reduce(op, tmp_buf, recv_buf, r_bitmap + bitmap_offset, adj_size, small_block_count, split_rank, ind_dtype[1 + dtype_offset]);
+    my_reduce_indexed_dtype(op, tmp_buf, recv_buf, r_bitmap + bitmap_offset, adj_size, small_block_count, split_rank, dtype);
 
     bitmap_offset += adj_size;
     dtype_offset += 2;
@@ -2016,7 +2007,7 @@ int ompi_coll_base_allreduce_swing_rabenseifner_dt_single(
   size_t w_size = (size_t) adj_size;
   // Reduce-Scatter phase
   for (step = 0; step < n_steps; step++) {
-    w_size >>= 2;
+    w_size >>= 1;
 
     vdest = pi(vrank, step, adj_size);
     
@@ -2032,7 +2023,7 @@ int ompi_coll_base_allreduce_swing_rabenseifner_dt_single(
 
     ompi_coll_base_sendrecv(recv_buf, 1, ind_dtype, vdest, MCA_COLL_BASE_TAG_ALLREDUCE, tmp_buf, recv_count, dtype, vdest, MCA_COLL_BASE_TAG_ALLREDUCE, comm, MPI_STATUS_IGNORE, rank);
     
-    my_reduce(op, tmp_buf, recv_buf, r_bitmap + bitmap_offset, adj_size, small_block_count, split_rank, dtype);
+    my_reduce_copy(op, tmp_buf, recv_buf, r_bitmap + bitmap_offset, adj_size, small_block_count, split_rank, dtype);
 
     bitmap_offset += adj_size;
     
@@ -2056,7 +2047,7 @@ int ompi_coll_base_allreduce_swing_rabenseifner_dt_single(
     
     my_overwrite(tmp_buf, recv_buf, s_bitmap + bitmap_offset, adj_size, small_block_count, split_rank, dtype);
     
-    w_size <<= 2;
+    w_size <<= 1;
     bitmap_offset -= adj_size;
     ompi_datatype_destroy(&ind_dtype);
     ind_dtype = MPI_DATATYPE_NULL;

@@ -1002,7 +1002,7 @@ int ompi_coll_base_allreduce_intra_redscat_allgather(
     int err = MPI_SUCCESS;
     ptrdiff_t lb, extent, dsize, gap = 0;
     ompi_datatype_get_extent(dtype, &lb, &extent);
-    dsize = opal_datatype_span(&dtype->super, count, &gap);
+    dsize = opal_datatype_span(&dtype->super, count >> 1, &gap);
 
     /* Temporary buffer for receiving messages */
     char *tmp_buf = NULL;
@@ -1049,14 +1049,14 @@ int ompi_coll_base_allreduce_intra_redscat_allgather(
              */
             err = ompi_coll_base_sendrecv(rbuf, count_lhalf, dtype, rank - 1,
                                           MCA_COLL_BASE_TAG_ALLREDUCE,
-                                          (char *)tmp_buf + (ptrdiff_t)count_lhalf * extent,
+                                          (char *)tmp_buf,
                                           count_rhalf, dtype, rank - 1,
                                           MCA_COLL_BASE_TAG_ALLREDUCE, comm,
                                           MPI_STATUS_IGNORE, rank);
             if (MPI_SUCCESS != err) { goto cleanup_and_return; }
 
             /* Reduce on the right half of the buffers (result in rbuf) */
-            ompi_op_reduce(op, (char *)tmp_buf + (ptrdiff_t)count_lhalf * extent,
+            ompi_op_reduce(op, (char *)tmp_buf,
                            (char *)rbuf + count_lhalf * extent, count_rhalf, dtype);
 
             /* Send the right half to the left neighbor */
@@ -1158,14 +1158,13 @@ int ompi_coll_base_allreduce_intra_redscat_allgather(
             err = ompi_coll_base_sendrecv((char *)rbuf + (ptrdiff_t)sindex[step] * extent,
                                           scount[step], dtype, dest,
                                           MCA_COLL_BASE_TAG_ALLREDUCE,
-                                          (char *)tmp_buf + (ptrdiff_t)rindex[step] * extent,
-                                          rcount[step], dtype, dest,
+                                          (char *)tmp_buf, rcount[step], dtype, dest,
                                           MCA_COLL_BASE_TAG_ALLREDUCE, comm,
                                           MPI_STATUS_IGNORE, rank);
             if (MPI_SUCCESS != err) { goto cleanup_and_return; }
 
             /* Local reduce: rbuf[] = tmp_buf[] <op> rbuf[] */
-            ompi_op_reduce(op, (char *)tmp_buf + (ptrdiff_t)rindex[step] * extent,
+            ompi_op_reduce(op, (char *)tmp_buf,
                            (char *)rbuf + (ptrdiff_t)rindex[step] * extent,
                            rcount[step], dtype);
 

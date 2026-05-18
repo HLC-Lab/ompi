@@ -8,6 +8,8 @@
  *                         reserved.
  * Copyright (c) 2023      Jeffrey M. Squyres.  All rights reserved.
  * Copyright (c) 2024      NVIDIA Corporation.  All rights reserved.
+ * Copyright (c) 2026      Nanook Consulting  All rights reserved.
+ * Copyright (c) 2026      BULL S.A.S.  All rights reserved.
  * $COPYRIGHT$
  *
  * Additional copyrights may follow
@@ -107,8 +109,9 @@ static opal_finalize_domain_t ompi_instance_common_domain;
 static void ompi_instance_construct (ompi_instance_t *instance)
 {
     instance->i_f_to_c_index = opal_pointer_array_add (&ompi_instance_f_to_c_table, instance);
+    instance->i_name = (char*) malloc (MPI_MAX_OBJECT_NAME);
     instance->i_name[0] = '\0';
-    instance->i_flags = 0;
+    instance->i_flags   = 0;
     instance->i_keyhash = NULL;
     OBJ_CONSTRUCT(&instance->s_lock, opal_mutex_t);
     instance->errhandler_type = OMPI_ERRHANDLER_TYPE_INSTANCE;
@@ -117,6 +120,8 @@ static void ompi_instance_construct (ompi_instance_t *instance)
 
 static void ompi_instance_destruct(ompi_instance_t *instance)
 {
+    free(instance->i_name);
+    instance->i_name = NULL;
     OBJ_DESTRUCT(&instance->s_lock);
 }
 
@@ -586,11 +591,16 @@ static int ompi_mpi_instance_init_common (int argc, char **argv)
                 active = true;
                 OPAL_POST_OBJECT(&active);
                 PMIX_INFO_LOAD(&info[0], PMIX_COLLECT_DATA, &opal_pmix_collect_all_data, PMIX_BOOL);
-                if( PMIX_SUCCESS != (rc = PMIx_Fence_nb(NULL, 0, NULL, 0,
-                                                        fence_release,
-                                                        (void*)&active))) {
-                    ret = opal_pmix_convert_status(rc);
-                    return ompi_instance_print_error ("PMIx_Fence_nb() failed", ret);
+                rc = PMIx_Fence_nb(NULL, 0, NULL, 0, fence_release, (void*)&active);
+                if (PMIX_SUCCESS != rc) {
+                    active = false;
+                    if (PMIX_OPERATION_SUCCEEDED == rc) {
+                        // can return operation_succeeded if atomically completed
+                        ret = MPI_SUCCESS;
+                    } else {
+                        ret = opal_pmix_convert_status(rc);
+                        return ompi_instance_print_error ("PMIx_Fence_nb() failed", ret);
+                    }
                 }
             }
         } else {
@@ -602,12 +612,19 @@ static int ompi_mpi_instance_init_common (int argc, char **argv)
             OPAL_POST_OBJECT(&active);
             PMIX_INFO_LOAD(&info[0], PMIX_COLLECT_DATA, &opal_pmix_collect_all_data, PMIX_BOOL);
             rc = PMIx_Fence_nb(NULL, 0, info, 1, fence_release, (void*)&active);
-            if( PMIX_SUCCESS != rc) {
-                ret = opal_pmix_convert_status(rc);
-                return ompi_instance_print_error ("PMIx_Fence() failed", ret);
+            if (PMIX_SUCCESS != rc) {
+                active = false;
+                if (PMIX_OPERATION_SUCCEEDED == rc) {
+                    // can return operation_succeeded if atomically completed
+                    ret = MPI_SUCCESS;
+                } else {
+                    ret = opal_pmix_convert_status(rc);
+                    return ompi_instance_print_error ("PMIx_Fence() failed", ret);
+                }
+            } else {
+                /* cannot just wait on thread as we need to call opal_progress */
+                OMPI_LAZY_WAIT_FOR_COMPLETION(active);
             }
-            /* cannot just wait on thread as we need to call opal_progress */
-            OMPI_LAZY_WAIT_FOR_COMPLETION(active);
         }
     }
 
@@ -748,7 +765,9 @@ static int ompi_mpi_instance_init_common (int argc, char **argv)
          * we have to wait here for it to complete. However, there
          * is no reason to do two barriers! */
         if (background_fence) {
-            OMPI_LAZY_WAIT_FOR_COMPLETION(active);
+            if (active) {
+                OMPI_LAZY_WAIT_FOR_COMPLETION(active);
+            }
         } else if (!ompi_async_mpi_init) {
             /* wait for everyone to reach this point - this is a hard
              * barrier requirement at this time, though we hope to relax
@@ -757,12 +776,19 @@ static int ompi_mpi_instance_init_common (int argc, char **argv)
             active = true;
             OPAL_POST_OBJECT(&active);
             PMIX_INFO_LOAD(&info[0], PMIX_COLLECT_DATA, &flag, PMIX_BOOL);
-            if (PMIX_SUCCESS != (rc = PMIx_Fence_nb(NULL, 0, info, 1,
-                                                    fence_release, (void*)&active))) {
-                ret = opal_pmix_convert_status(rc);
-                return ompi_instance_print_error ("PMIx_Fence_nb() failed", ret);
+            rc = PMIx_Fence_nb(NULL, 0, info, 1, fence_release, (void*)&active);
+            if (PMIX_SUCCESS != rc) {
+                active = false;
+                if (PMIX_OPERATION_SUCCEEDED == rc) {
+                    // can return operation_succeeded if atomically completed
+                    ret = MPI_SUCCESS;
+                } else {
+                    ret = opal_pmix_convert_status(rc);
+                    return ompi_instance_print_error ("PMIx_Fence() failed", ret);
+                }
+            } else {
+                OMPI_LAZY_WAIT_FOR_COMPLETION(active);
             }
-            OMPI_LAZY_WAIT_FOR_COMPLETION(active);
         }
     }
 

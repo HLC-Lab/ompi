@@ -21,6 +21,8 @@
  * Copyright (c) 2018-2021 Triad National Security, LLC. All rights
  *                         reserved.
  * Copyright (c) 2025      Jeffrey M. Squyres.  All rights reserved.
+ * Copyright (c) 2026      NVIDIA Corporation.  All rights reserved.
+ * Copyright (c) 2026      Stony Brook University.  All rights reserved.
  * $COPYRIGHT$
  *
  * Additional copyrights may follow
@@ -397,6 +399,8 @@ const ompi_datatype_t* ompi_datatype_basicDatatypes[OMPI_DATATYPE_MPI_MAX_PREDEF
     [OMPI_DATATYPE_MPI_SHORT_FLOAT] = &ompi_mpi_short_float.dt,
     [OMPI_DATATYPE_MPI_C_SHORT_FLOAT_COMPLEX] = &ompi_mpi_c_short_float_complex.dt,
 
+    [OMPI_DATATYPE_MPI_FLOAT128] = &ompi_mpi_real16.dt,
+
     [OMPI_DATATYPE_MPI_UNAVAILABLE] = &ompi_mpi_unavailable.dt,
 };
 
@@ -438,7 +442,9 @@ opal_pointer_array_t ompi_datatype_f_to_c_table = {{0}};
         displ[1] = (ptrdiff_t)(&(s[0].v2));                                          \
         displ[1] -= base;                                                            \
                                                                                      \
-        ompi_datatype_create_struct( 2, bLength, displ, types, &ptype );             \
+        ompi_datatype_create_struct( 2, OMPI_COUNT_ARRAY_CREATE(bLength),            \
+                                     OMPI_DISP_ARRAY_CREATE(displ), types,           \
+                                     &ptype );                                       \
         displ[0] = (ptrdiff_t)(&(s[1]));                                             \
         displ[0] -= base;                                                            \
         if( displ[0] != (displ[1] + (ptrdiff_t)sizeof(type2)) )                      \

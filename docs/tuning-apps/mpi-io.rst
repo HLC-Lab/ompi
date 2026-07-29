@@ -46,6 +46,13 @@ parameters available for the OMPIO ``io``, ``fcoll``, ``fs``,
    shell$ ompi_info --param fbtl     all --level 9
    shell$ ompi_info --param sharedfp all --level 9
 
+.. _label-ompio-mpi-info-hints:
+
+OMPIO MPI_Info hints
+--------------------
+
+.. include:: /tuning-apps/_include/ompio-mpi-info-hints.rst
+
 OMPIO sub-framework components
 ------------------------------
 
@@ -158,15 +165,15 @@ file on a parallel file system.  Note, that many file systems only
 allow changing these setting upon file creation, i.e. modifying these
 values for an already existing file might not be possible.
 
-#. ``fs_lustre_stripe_size``: Sets the number of storage servers for a
+#. ``fs_lustre_stripe_size``: Sets the stripe size, in bytes, for a
    new file on a Lustre file system. If not set, system default will
    be used. Note that this parameter can also be set through the
-   ``stripe_size`` MPI Info value.
+   ``striping_unit`` or ``stripe_size`` MPI Info value.
 
-#. ``fs_lustre_stripe_width``: Sets the size of an individual block
-   for a new file on a Lustre file system. If not set, system default
-   will be used. Note that this parameter can also be set through the
-   ``stripe_width`` MPI Info value.
+#. ``fs_lustre_stripe_width``: Sets the number of storage servers for
+   a new file on a Lustre file system. If not set, system default will
+   be used. Note that this parameter can also be set through the
+   ``striping_factor`` or ``stripe_width`` MPI Info value.
 
 Using GPU device buffers in MPI File I/O operations
 ----------------------------------------------------
@@ -207,7 +214,7 @@ individual files are merged into the actual output file, using the
 time stamps as the main criteria.
 
 The component has certain limitations and restrictions, such as its
-relience on the synchronization clocks on the individual cluster nodes
+reliance on the synchronization clocks on the individual cluster nodes
 to determine the order between entries in the final file, which might
 lead to some deviations compared to the actual calling sequence.
 

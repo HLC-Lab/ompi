@@ -228,12 +228,78 @@ ompi/mpi/fortran/use-mpi-tkr/mpi_kinds.ompi_module
 ompi/mpi/fortran/use-mpi-tkr/mpi-tkr-sizeof.f90
 ompi/mpi/fortran/use-mpi-tkr/mpi-tkr-sizeof.h
 
-ompi/mpi/java/java/mpi
-ompi/mpi/java/java/*.jar
-ompi/mpi/java/java/*.h
-ompi/mpi/java/java/doc
-
 ompi/mpi/tool/profile/*.c
+
+ompi/test/t/mpi_t_category_get_events
+ompi/test/t/mpi_t_concurrent_init
+ompi/test/t/mpi_t_level_no_downgrade
+ompi/test/t/mpi_t_level_pinning
+ompi/test/t/mpi_t_lifecycle
+ompi/test/t/mpi_t_outlives_mpi
+ompi/test/t/mpi_t_repeated_sessions
+ompi/test/t/mpi_t_sessions
+ompi/test/t/mpi_t_stress
+ompi/test/t/mpi_t_world_close_first
+ompi/test/t/mpi_t_world_inner
+ompi/test/t/mpi_t_world_outlast
+ompi/test/t/mpi_t_world_sessions
+
+ompi/test/file/file_info_defaults
+ompi/test/file/file_info_hints
+ompi/test/file/file_info_memkind
+ompi/test/file/file_info_set_view
+
+ompi/test/part/parrived_null_inactive
+ompi/test/part/partitioned_proc_null
+
+ompi/test/datatype/checksum
+ompi/test/datatype/ddt_pack
+ompi/test/datatype/ddt_raw
+ompi/test/datatype/ddt_raw2
+ompi/test/datatype/ddt_test
+ompi/test/datatype/external32
+ompi/test/datatype/large_data
+ompi/test/datatype/mpi_datatype_bigcount
+ompi/test/datatype/ompi_datatype_bigcount
+ompi/test/datatype/partial
+ompi/test/datatype/position
+ompi/test/datatype/position_noncontig
+ompi/test/datatype/reduce_local
+ompi/test/datatype/sizedtypes
+ompi/test/datatype/to_self
+ompi/test/datatype/unpack_ooo
+
+ompi/test/general/attr_interlang_mpifh
+ompi/test/general/attr_interlang_mpifh.f90
+ompi/test/general/attr_interlang_usempi
+ompi/test/general/attr_interlang_usempi.f90
+ompi/test/general/attr_interlang_usempif08
+ompi/test/general/attr_interlang_usempif08.f90
+ompi/test/general/attribute
+ompi/test/general/communicator
+ompi/test/general/datatype
+ompi/test/general/errhandler
+ompi/test/general/file
+ompi/test/general/group
+ompi/test/general/info_mpi
+ompi/test/general/info_t
+ompi/test/general/instance
+ompi/test/general/message
+ompi/test/general/mpi_init
+ompi/test/general/op
+ompi/test/general/ompi_file_test.dat
+ompi/test/general/proc
+ompi/test/general/request
+ompi/test/general/seq_tracker
+ompi/test/general/win
+
+ompi/test/monitoring/monitoring_test
+ompi/test/monitoring/check_monitoring
+ompi/test/monitoring/example_reduce_count
+ompi/test/monitoring/test_overhead
+ompi/test/monitoring/test_pvar_access
+
+ompi/test/spc/spc_test
 
 ompi/mpiext/affinity/c/example
 
@@ -277,7 +343,6 @@ ompi/tools/wrappers/ompi.pc
 ompi/tools/wrappers/ompi-c.pc
 ompi/tools/wrappers/ompi-cxx.pc
 ompi/tools/wrappers/ompi-fort.pc
-ompi/tools/wrappers/mpijavac.pl
 ompi/tools/wrappers/mpicxx-wrapper-data.txt
 ompi/tools/wrappers/mpif77-wrapper-data.txt
 ompi/tools/wrappers/mpif90-wrapper-data.txt
@@ -317,15 +382,13 @@ opal/tools/wrappers/opal.pc
 opal/util/show_help_content.c
 opal/util/keyval/keyval_lex.c
 
-test/monitoring/aggregate_profile.pl
-test/monitoring/profile2mat.pl
-
 test/simple/abort
 test/simple/accept
 test/simple/attach
 test/simple/bad_exit
 test/simple/bcast_loop
 test/simple/binding
+test/simple/comm_abort
 test/simple/concurrent_spawn
 test/simple/connect
 test/simple/crisscross
@@ -336,6 +399,7 @@ test/simple/hello_output
 test/simple/hello_show_help
 test/simple/hello
 test/simple/hello++
+test/simple/initial_errh
 test/simple/intercomm1
 test/simple/interlib
 test/simple/loop_child
@@ -344,6 +408,7 @@ test/simple/mpi_barrier
 test/simple/mpi_no_op
 test/simple/mpi_spin
 test/simple/multi_abort
+test/simple/ompio_file_info
 test/simple/parallel_r8
 test/simple/parallel_r64
 test/simple/parallel_w8
@@ -436,7 +501,7 @@ test/class/*.txt
 test/class/ompi_bitmap_test_out.txt
 test/class/ompi_circular_buffer_fifo
 test/class/ompi_fifo
-test/class/ompi_rb_tree
+test/class/opal_rb_tree
 test/class/ompi_bitmap
 test/class/opal_bitmap
 test/class/opal_fifo
@@ -448,30 +513,21 @@ test/class/opal_pointer_array
 test/class/opal_proc_table
 test/class/opal_tree
 test/class/opal_value_array
+test/class/opal_graph
+test/class/opal_hotel
+test/class/opal_interval_tree
+test/class/opal_ring_buffer
 
-test/datatype/ddt_test
-test/datatype/ddt_pack
-test/datatype/external32
-test/datatype/to_self
-test/datatype/checksum
-test/datatype/position
-test/datatype/ddt_raw
 test/datatype/opal_datatype_test
-test/datatype/position_noncontig
-test/datatype/unpack_ooo
+test/datatype/opal_datatype_bigcount
+test/datatype/opal_ddt_api
 test/datatype/unpack_hetero
 
 test/event/signal-test
 test/event/event-test
 test/event/time-test
 
-test/monitoring/monitoring_test
-test/monitoring/check_monitoring
-test/monitoring/example_reduce_count
-test/monitoring/test_overhead
-test/monitoring/test_pvar_access
-
-test/mpi/environment/chello
+test/mpool/mpool_memkind
 
 test/runtime/parse_context
 test/runtime/sigchld
@@ -479,10 +535,9 @@ test/runtime/start_shut
 test/runtime/opal_init_finalize
 test/runtime/orte_init_finalize
 
-test/spc/spc_test
-
 test/threads/opal_condition
 test/threads/opal_thread
+test/threads/opal_atomic_thread_bench
 
 test/util/aaa
 test/util/test_session_dir_out
@@ -497,7 +552,7 @@ test/util/orte_session_dir
 test/util/orte_sys_info
 test/util/orte_universe_setup_file_io
 test/util/opal_basename
-test/util/ompi_numtostr
+test/util/opal_numtostr
 test/util/ompi_pack
 test/util/test-file
 test/util/opal_sos
@@ -506,6 +561,29 @@ test/util/opal_path_nfs.out
 test/util/opal_bit_ops
 test/util/bipartite_graph
 test/util/opal_sha256
+test/util/opal_json
+test/util/opal_alfg
+test/util/opal_arch
+test/util/opal_cmd_line
+test/util/opal_crc
+test/util/opal_environ
+test/util/opal_fd
+test/util/opal_few
+test/util/opal_getcwd
+test/util/opal_info
+test/util/opal_info_subscriber
+test/util/opal_keyval_parse
+test/util/opal_malloc
+test/util/opal_net
+test/util/opal_os_dirpath
+test/util/opal_output
+test/util/opal_path
+test/util/opal_printf
+test/util/opal_proc
+test/util/opal_qsort
+test/util/opal_string_copy
+test/util/opal_sys_limits
+test/util/opal_uri
 
 opal/test/reachable/reachable_netlink
 opal/test/reachable/reachable_weighted
@@ -517,6 +595,10 @@ docs/_static
 docs/_static/css/custom.css
 docs/_templates
 docs/man-openmpi/man3/bindings
+docs/llms-build
+docs/llms-build.stamp
+docs/llms-det-a
+docs/llms-det-b
 docs/*.inv
 
 # Common Python virtual environment and cache directory names
@@ -532,6 +614,9 @@ docs/schizo-ompi-rst-content
 # tarballs)
 docs/html
 docs/man
+
+# other doc RST files to ignore as they are generated
+docs/code-of-conduct.rst
 
 # Generated C Bindings
 ompi/mpi/c/*_generated*.c

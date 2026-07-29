@@ -35,13 +35,13 @@ jobs:
       if:   ${{ runner.os == 'Linux' }}
 
     - name: Checkout Open MPI
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
        path: mpi-build
        submodules: recursive
 
     - name: Bootstrap Open MPI
-      run:  ./autogen.pl
+      run:  AUTOMAKE_JOBS=$(nproc) ./autogen.pl
       working-directory: mpi-build
 
     # Install into a separate directory (/opt/openmpi) so that we can
@@ -83,6 +83,15 @@ jobs:
         mca_params="$HOME/.prte/mca-params.conf"
         mkdir -p "$(dirname "$mca_params")"
         echo rmaps_default_mapping_policy = :oversubscribe >> "$mca_params"
+        #
+        # Recent versions of OpenPMIx started emitting warnings about use of deprecated
+        # MCA parameters its emission to stderr causes the demo/test-run stuff below to fail.
+        # Suppress generation of these warnings.  A simpler CI test should be used to
+        # to check for these messages.
+        #
+        mca_params="$HOME/.pmix/mca-params.conf"
+        mkdir -p "$(dirname "$mca_params")"
+        echo mca_base_suppress_deprecated_warning = true >> "$mca_params"
 
     - name: Show MPI
       run:  ompi_info
@@ -105,7 +114,7 @@ jobs:
               numpy cffi pyyaml
 
     - name: Checkout mpi4py
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         repository: ${{ inputs.repository || 'mpi4py/mpi4py' }}
         ref: ${{ inputs.ref }}

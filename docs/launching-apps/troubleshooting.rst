@@ -61,9 +61,11 @@ why this can happen.
     linker is smart enough to not load ``libmpi`` twice |mdash| but it
     does keeps ``libmpi`` in a public scope.
   * Use the ``--disable-dlopen`` or ``--disable-mca-dso`` options to
-    Open MPI's ``configure`` script (see this TODO NONEXISTENT FAQ entry
-    for more details on these
-    options).  These options slurp all of Open MPI's plugins up in to
+    Open MPI's ``configure`` script (see the
+    :ref:`--disable-dlopen <building-ompi-cli-options-disable-dlopen-label>`
+    and :ref:`--enable-mca-dso / --enable-mca-static
+    <building-ompi-cli-options-mca-dso-label>` option descriptions for
+    more details).  These options slurp all of Open MPI's plugins up in to
     ``libmpi`` |mdash| meaning that the plugins physically reside in
     ``libmpi`` and will not be dynamically opened at run time.
   * Build Open MPI as a static library by configuring Open MPI with
@@ -77,7 +79,7 @@ Errors about missing libraries
 When building Open MPI with the compilers that have libraries in
 non-default search path locations, you may see errors about those
 compiler's support libraries when trying to launch MPI applications if
-their corresponding environments were not setup properly.
+their corresponding environments were not set up properly.
 
 For example, you may see warnings similar to the following:
 
@@ -107,13 +109,13 @@ Specifically, Open MPI first attempts to launch a "helper" daemon
 libraries shown above (``libimf.so``, ``libpgcc.so``, and
 ``libmv.so``) are specific to their compiler suites (Intel, PGI, and
 PathScale, respectively).  As such, it is likely that the user did not
-setup the compiler library in their environment properly on this node.
+set up the compiler library in their environment properly on this node.
 
-Double check that you have setup the appropriate compiler environment
+Double check that you have set up the appropriate compiler environment
 on the target node, for both interactive and non-interactive logins.
 
 .. note:: It is a common error to ensure that the compiler environment
-          is setup properly for *interactive* logins, but not for
+          is set up properly for *interactive* logins, but not for
           *non-interactive* logins.
 
 Here's an example of a user-compiled MPI application working fine
@@ -142,7 +144,7 @@ locally, but failing when invoked non-interactively on a remote node:
    mpi_hello: error while loading shared libraries: libimf.so: cannot open shared object file: No such file or directory
 
 In cases like this, check your shell script startup files and verify
-that the appropriate compiler environment is setup properly for
+that the appropriate compiler environment is set up properly for
 non-interactive logins.
 
 Problems when running across multiple hosts
@@ -162,7 +164,7 @@ them across multiple hosts, try the following:
       remotehost
 
    If you are unable to launch across multiple hosts, check that your
-   SSH keys are setup properly.  Or, if you are running in a managed
+   SSH keys are set up properly.  Or, if you are running in a managed
    environment, such as in a Slurm, Torque, or other job launcher,
    check that you have reserved enough hosts, are running in an
    allocated job, etc.

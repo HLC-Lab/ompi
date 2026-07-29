@@ -66,7 +66,7 @@ For example:
 
 Additionally, Open MPI requires that jobs can be started on remote
 nodes without any input from the keyboard.  For example, if using
-``ssh`` as the remote agent, you must have your environment setup to
+``ssh`` as the remote agent, you must have your environment set up to
 allow execution on remote nodes without entering a password or
 passphrase.
 
@@ -249,8 +249,3 @@ uses ``--prefix``:
 .. code-block::
 
    shell$ /opt/openmpi-VERSION/bin/mpirun -n 4 a.out
-
-.. error:: TODO Josh H points out that we might also want to mention
-           ``OMPIHOME`` for PRRTE's ``.ini`` file here.  Leaving this
-           as a future to-do item, since PRRTE's ``.ini`` file support
-           does not exist yet.

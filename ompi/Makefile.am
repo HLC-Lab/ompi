@@ -21,7 +21,7 @@
 # Copyright (c) 2018      FUJITSU LIMITED.  All rights reserved.
 # Copyright (c) 2021      Amazon.com, Inc. or its affiliates.  All Rights
 #                         reserved.
-# Copyright (c) 2025      Jeffrey M. Squyres.  All rights reserved.
+# Copyright (c) 2025-2026 Jeffrey M. Squyres.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -94,10 +94,11 @@ SUBDIRS = \
         mpi/fortran/mpiext-use-mpi-f08 \
         $(MCA_ompi_FRAMEWORK_COMPONENT_DSO_SUBDIRS)
 
-if OMPI_WANT_JAVA_BINDINGS
+# Unit tests for the OMPI layer.  Placed at the end of SUBDIRS so that
+# libmpi (built by the "." entry above) exists before the test programs
+# are linked during "make check".
 SUBDIRS += \
-        mpi/java
-endif
+        test
 
 # The ordering of the DIST_SUBDIRS isn't as important, but note that
 # its contents *are* different than SUBDIRS.  In particular, the
@@ -121,7 +122,7 @@ DIST_SUBDIRS = \
         mpi/fortran/use-mpi-f08/mod \
         mpi/fortran/use-mpi-f08/bindings \
         mpi/fortran/mpiext-use-mpi-f08 \
-        mpi/java \
+        test \
         $(OMPI_MPIEXT_ALL_SUBDIRS) \
         $(MCA_ompi_FRAMEWORKS_SUBDIRS) \
         $(MCA_ompi_FRAMEWORK_COMPONENT_ALL_SUBDIRS)

@@ -23,8 +23,7 @@ There are multiple MPI network models available in this release:
   utilizing MTL ("Matching Transport Layer") plugins:
 
   * OpenFabrics Interfaces ("libfabric" tag matching)
-  * Intel Omni-Path PSM2 (version 11.2.173 or later)
-  * Intel True Scale PSM (QLogic InfiniPath)
+  * Cornelis Networks Omni-Path PSM2 (version 11.2.173 or later)
   * Portals 4
 
 * ``ucx`` uses the `Unified Communication X (UCX) communication
@@ -60,7 +59,7 @@ run-time:
 
 .. code-block:: sh
 
-   shell$ mpirun --mca pml ob1 --mca btl [comma-delimted-BTLs] ...
+   shell$ mpirun --mca pml ob1 --mca btl [comma-delimited-BTLs] ...
    # or
    shell$ mpirun --mca pml cm --mca mtl [MTL] ...
    # or

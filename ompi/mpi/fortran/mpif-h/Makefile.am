@@ -48,7 +48,7 @@ AM_CPPFLAGS = -DOMPI_BUILD_MPI_PROFILING=0 -DOMPI_COMPILING_FORTRAN_WRAPPERS=1
 # to be built are:
 #
 # 1. When profiling is disabled
-# 2. When profiling is enabled but weak symbol support is absent
+# 2. When profiling is enabled but weak alias support is absent
 #
 
 lib_LTLIBRARIES =
@@ -166,6 +166,8 @@ lib@OMPI_LIBMPI_NAME@_mpifh_la_SOURCES += \
         bsend_init_f.c \
         buffer_attach_f.c \
         buffer_detach_f.c \
+        buffer_flush_f.c \
+        buffer_iflush_f.c \
         cancel_f.c \
         cart_coords_f.c \
         cart_create_f.c \
@@ -453,9 +455,15 @@ lib@OMPI_LIBMPI_NAME@_mpifh_la_SOURCES += \
         start_f.c \
         status_f082f_f.c \
         status_f2f08_f.c \
+        status_get_error_f.c \
+        status_get_source_f.c \
+        status_get_tag_f.c \
         status_set_cancelled_f.c \
         status_set_elements_f.c \
         status_set_elements_x_f.c \
+        status_set_error_f.c \
+        status_set_source_f.c \
+        status_set_tag_f.c \
         testall_f.c \
         testany_f.c \
         test_cancelled_f.c \

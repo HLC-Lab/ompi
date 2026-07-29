@@ -78,6 +78,8 @@ linked_files = \
         pbsend_init_f.c \
         pbuffer_attach_f.c \
         pbuffer_detach_f.c \
+        pbuffer_flush_f.c \
+        pbuffer_iflush_f.c \
         pcancel_f.c \
         pcart_coords_f.c \
         pcart_create_f.c \
@@ -364,9 +366,15 @@ linked_files = \
         pstart_f.c \
         pstatus_f082f_f.c \
         pstatus_f2f08_f.c \
+        pstatus_get_error_f.c \
+        pstatus_get_source_f.c \
+        pstatus_get_tag_f.c \
         pstatus_set_cancelled_f.c \
         pstatus_set_elements_f.c \
         pstatus_set_elements_x_f.c \
+        pstatus_set_error_f.c \
+        pstatus_set_source_f.c \
+        pstatus_set_tag_f.c \
         ptestall_f.c \
         ptestany_f.c \
         ptest_cancelled_f.c \

@@ -65,29 +65,31 @@ ompi_coll_tuned_allreduce_intra_dec_dynamic (const void *sbuf, void *rbuf, size_
 
     /* Check first if an algorithm is set explicitly for this collective */
     if (tuned_module->user_forced[ALLREDUCE].algorithm) {
-        return ompi_coll_tuned_allreduce_intra_do_this(sbuf, rbuf, count, dtype, op, comm, module,
-                                                       tuned_module->user_forced[ALLREDUCE].algorithm,
-                                                       tuned_module->user_forced[ALLREDUCE].tree_fanout,
-                                                       tuned_module->user_forced[ALLREDUCE].segsize);
+        return ompi_coll_tuned_allreduce_intra_do_this(
+            sbuf, rbuf, count, dtype, op, comm, module,
+            tuned_module->user_forced[ALLREDUCE].algorithm,
+            tuned_module->user_forced[ALLREDUCE].tree_fanout,
+            tuned_module->user_forced[ALLREDUCE].segsize,
+            tuned_module->user_forced[ALLREDUCE].bine_implementation);
     }
 
     /* check to see if we have some filebased rules */
     if (tuned_module->com_rules[ALLREDUCE]) {
         /* we do, so calc the message size or what ever we need and use this for the evaluation */
-        int alg, faninout, segsize, ignoreme;
+        int alg, faninout, segsize, ignoreme, bine_imp;
         size_t dsize;
 
         ompi_datatype_type_size (dtype, &dsize);
         dsize *= count;
 
-        alg = ompi_coll_tuned_get_target_method_params (tuned_module->com_rules[ALLREDUCE],
-                                                        dsize, &faninout, &segsize, &ignoreme);
+        alg = ompi_coll_tuned_get_target_method_params(tuned_module->com_rules[ALLREDUCE], dsize,
+                                                       &faninout, &segsize, &ignoreme, &bine_imp);
 
         if (alg) {
             /* we have found a valid choice from the file based rules for this message size */
-            return ompi_coll_tuned_allreduce_intra_do_this (sbuf, rbuf, count, dtype, op,
-                                                            comm, module,
-                                                            alg, faninout, segsize);
+            return ompi_coll_tuned_allreduce_intra_do_this(sbuf, rbuf, count, dtype, op, comm,
+                                                           module, alg, faninout, segsize,
+                                                           bine_imp);
         } /* found a method */
     } /*end if any com rules to check */
 
@@ -130,15 +132,16 @@ int ompi_coll_tuned_alltoall_intra_dec_dynamic(const void *sbuf, size_t scount,
     if (tuned_module->com_rules[ALLTOALL]) {
         /* we do, so calc the message size or what ever we need and use this for the evaluation */
         int comsize;
-        int alg, faninout, segsize, max_requests;
+        int alg, faninout, segsize, max_requests, bine_imp;
         size_t dsize;
 
         ompi_datatype_type_size (sdtype, &dsize);
         comsize = ompi_comm_size(comm);
         dsize *= (ptrdiff_t)comsize * (ptrdiff_t)scount;
 
-        alg = ompi_coll_tuned_get_target_method_params (tuned_module->com_rules[ALLTOALL],
-                                                        dsize, &faninout, &segsize, &max_requests);
+        alg = ompi_coll_tuned_get_target_method_params(tuned_module->com_rules[ALLTOALL], dsize,
+                                                       &faninout, &segsize, &max_requests,
+                                                       &bine_imp);
 
         if (alg) {
             /* we have found a valid choice from the file based rules for this message size */
@@ -187,10 +190,11 @@ int ompi_coll_tuned_alltoallv_intra_dec_dynamic(const void *sbuf, ompi_count_arr
      * based on the communicator size.
      */
     if (tuned_module->com_rules[ALLTOALLV]) {
-        int alg, faninout, segsize, max_requests;
+        int alg, faninout, segsize, max_requests, bine_imp;
 
-        alg = ompi_coll_tuned_get_target_method_params (tuned_module->com_rules[ALLTOALLV],
-                                                        0, &faninout, &segsize, &max_requests);
+        alg = ompi_coll_tuned_get_target_method_params(tuned_module->com_rules[ALLTOALLV], 0,
+                                                       &faninout, &segsize, &max_requests,
+                                                       &bine_imp);
 
         if (alg) {
             /* we have found a valid choice from the file based rules for this message size */
@@ -232,10 +236,10 @@ int ompi_coll_tuned_barrier_intra_dec_dynamic(struct ompi_communicator_t *comm,
     /* check to see if we have some filebased rules */
     if (tuned_module->com_rules[BARRIER]) {
         /* we do, so calc the message size or what ever we need and use this for the evaluation */
-        int alg, faninout, segsize, ignoreme;
+        int alg, faninout, segsize, ignoreme, bine_imp;
 
-        alg = ompi_coll_tuned_get_target_method_params (tuned_module->com_rules[BARRIER],
-                                                        0, &faninout, &segsize, &ignoreme);
+        alg = ompi_coll_tuned_get_target_method_params(tuned_module->com_rules[BARRIER], 0,
+                                                       &faninout, &segsize, &ignoreme, &bine_imp);
 
         if (alg) {
             /* we have found a valid choice from the file based rules for this message size */
@@ -266,30 +270,30 @@ int ompi_coll_tuned_bcast_intra_dec_dynamic(void *buf, size_t count,
 
     /* Check first if an algorithm is set explicitly for this collective */
     if (tuned_module->user_forced[BCAST].algorithm) {
-        return ompi_coll_tuned_bcast_intra_do_this(buf, count, dtype,
-                                                   root, comm, module,
+        return ompi_coll_tuned_bcast_intra_do_this(buf, count, dtype, root, comm, module,
                                                    tuned_module->user_forced[BCAST].algorithm,
                                                    tuned_module->user_forced[BCAST].chain_fanout,
-                                                   tuned_module->user_forced[BCAST].segsize);
+                                                   tuned_module->user_forced[BCAST].segsize,
+                                                   tuned_module->user_forced[BCAST]
+                                                       .bine_implementation);
     }
 
     /* check to see if we have some filebased rules */
     if (tuned_module->com_rules[BCAST]) {
         /* we do, so calc the message size or what ever we need and use this for the evaluation */
-        int alg, faninout, segsize, ignoreme;
+        int alg, faninout, segsize, ignoreme, bine_imp;
         size_t dsize;
 
         ompi_datatype_type_size (dtype, &dsize);
         dsize *= count;
 
-        alg = ompi_coll_tuned_get_target_method_params (tuned_module->com_rules[BCAST],
-                                                        dsize, &faninout, &segsize, &ignoreme);
+        alg = ompi_coll_tuned_get_target_method_params(tuned_module->com_rules[BCAST], dsize,
+                                                       &faninout, &segsize, &ignoreme, &bine_imp);
 
         if (alg) {
             /* we have found a valid choice from the file based rules for this message size */
-            return ompi_coll_tuned_bcast_intra_do_this (buf, count, dtype, root,
-                                                        comm, module,
-                                                        alg, faninout, segsize);
+            return ompi_coll_tuned_bcast_intra_do_this(buf, count, dtype, root, comm, module, alg,
+                                                       faninout, segsize, bine_imp);
         } /* found a method */
     } /*end if any com rules to check */
 
@@ -319,33 +323,35 @@ int ompi_coll_tuned_reduce_intra_dec_dynamic( const void *sbuf, void *rbuf,
 
     /* Check first if an algorithm is set explicitly for this collective */
     if (tuned_module->user_forced[REDUCE].algorithm) {
-        return ompi_coll_tuned_reduce_intra_do_this(sbuf, rbuf, count, dtype,
-                                                    op, root, comm, module,
+        return ompi_coll_tuned_reduce_intra_do_this(sbuf, rbuf, count, dtype, op, root, comm,
+                                                    module,
                                                     tuned_module->user_forced[REDUCE].algorithm,
                                                     tuned_module->user_forced[REDUCE].chain_fanout,
                                                     tuned_module->user_forced[REDUCE].segsize,
-                                                    tuned_module->user_forced[REDUCE].max_requests);
+                                                    tuned_module->user_forced[REDUCE].max_requests,
+                                                    tuned_module->user_forced[REDUCE]
+                                                        .bine_implementation);
     }
 
     /* check to see if we have some filebased rules */
     if (tuned_module->com_rules[REDUCE]) {
 
         /* we do, so calc the message size or what ever we need and use this for the evaluation */
-        int alg, faninout, segsize, max_requests;
+        int alg, faninout, segsize, max_requests, bine_imp;
         size_t dsize;
 
         ompi_datatype_type_size(dtype, &dsize);
         dsize *= count;
 
-        alg = ompi_coll_tuned_get_target_method_params (tuned_module->com_rules[REDUCE],
-                                                        dsize, &faninout, &segsize, &max_requests);
+        alg = ompi_coll_tuned_get_target_method_params(tuned_module->com_rules[REDUCE], dsize,
+                                                       &faninout, &segsize, &max_requests,
+                                                       &bine_imp);
 
         if (alg) {
             /* we have found a valid choice from the file based rules for this message size */
-            return  ompi_coll_tuned_reduce_intra_do_this (sbuf, rbuf, count, dtype,
-                                                          op, root, comm, module,
-                                                          alg, faninout,
-                                                          segsize, max_requests);
+            return ompi_coll_tuned_reduce_intra_do_this(sbuf, rbuf, count, dtype, op, root, comm,
+                                                        module, alg, faninout, segsize,
+                                                        max_requests, bine_imp);
         } /* found a method */
     } /*end if any com rules to check */
 
@@ -376,32 +382,33 @@ int ompi_coll_tuned_reduce_scatter_intra_dec_dynamic(const void *sbuf, void *rbu
 
     /* Check first if an algorithm is set explicitly for this collective */
     if (tuned_module->user_forced[REDUCESCATTER].algorithm) {
-        return ompi_coll_tuned_reduce_scatter_intra_do_this(sbuf, rbuf, rcounts, dtype,
-                                                            op, comm, module,
-                                                            tuned_module->user_forced[REDUCESCATTER].algorithm,
-                                                            tuned_module->user_forced[REDUCESCATTER].chain_fanout,
-                                                            tuned_module->user_forced[REDUCESCATTER].segsize);
+        return ompi_coll_tuned_reduce_scatter_intra_do_this(
+            sbuf, rbuf, rcounts, dtype, op, comm, module,
+            tuned_module->user_forced[REDUCESCATTER].algorithm,
+            tuned_module->user_forced[REDUCESCATTER].chain_fanout,
+            tuned_module->user_forced[REDUCESCATTER].segsize,
+            tuned_module->user_forced[REDUCESCATTER].bine_implementation);
     }
 
     /* check to see if we have some filebased rules */
     if (tuned_module->com_rules[REDUCESCATTER]) {
         /* we do, so calc the message size or what ever we need and use
            this for the evaluation */
-        int alg, faninout, segsize, ignoreme, i, count, size;
+        int alg, faninout, segsize, ignoreme, i, count, size, bine_imp;
         size_t dsize;
         size = ompi_comm_size(comm);
         for (i = 0, count = 0; i < size; i++) { count += ompi_count_array_get(rcounts, i);}
         ompi_datatype_type_size (dtype, &dsize);
         dsize *= count;
 
-        alg = ompi_coll_tuned_get_target_method_params (tuned_module->com_rules[REDUCESCATTER],
-                                                        dsize, &faninout,
-                                                        &segsize, &ignoreme);
+        alg = ompi_coll_tuned_get_target_method_params(tuned_module->com_rules[REDUCESCATTER],
+                                                       dsize, &faninout, &segsize, &ignoreme,
+                                                       &bine_imp);
         if (alg) {
             /* we have found a valid choice from the file based rules for this message size */
-            return  ompi_coll_tuned_reduce_scatter_intra_do_this (sbuf, rbuf, rcounts, dtype,
-                                                                  op, comm, module,
-                                                                  alg, faninout, segsize);
+            return ompi_coll_tuned_reduce_scatter_intra_do_this(sbuf, rbuf, rcounts, dtype, op,
+                                                                comm, module, alg, faninout,
+                                                                segsize, bine_imp);
         } /* found a method */
     } /*end if any com rules to check */
 
@@ -443,15 +450,15 @@ int ompi_coll_tuned_reduce_scatter_block_intra_dec_dynamic(const void *sbuf, voi
     if (tuned_module->com_rules[REDUCESCATTERBLOCK]) {
         /* we do, so calc the message size or what ever we need and use
            this for the evaluation */
-        int alg, faninout, segsize, ignoreme, size;
+        int alg, faninout, segsize, ignoreme, size, bine_imp;
         size_t dsize;
         size = ompi_comm_size(comm);
         ompi_datatype_type_size (dtype, &dsize);
         dsize *= rcount * size;
 
         alg = ompi_coll_tuned_get_target_method_params(tuned_module->com_rules[REDUCESCATTERBLOCK],
-                                                       dsize, &faninout,
-                                                       &segsize, &ignoreme);
+                                                       dsize, &faninout, &segsize, &ignoreme,
+                                                       &bine_imp);
         if (alg) {
             /* we have found a valid choice from the file based rules for this message size */
             return  ompi_coll_tuned_reduce_scatter_block_intra_do_this (sbuf, rbuf, rcount, dtype,
@@ -488,34 +495,33 @@ int ompi_coll_tuned_allgather_intra_dec_dynamic(const void *sbuf, size_t scount,
     /* Check first if an algorithm is set explicitly for this collective */
     if (tuned_module->user_forced[ALLGATHER].algorithm) {
         /* User-forced algorithm */
-        return ompi_coll_tuned_allgather_intra_do_this(sbuf, scount, sdtype,
-                                                       rbuf, rcount, rdtype,
-                                                       comm, module,
-                                                       tuned_module->user_forced[ALLGATHER].algorithm,
-                                                       tuned_module->user_forced[ALLGATHER].tree_fanout,
-                                                       tuned_module->user_forced[ALLGATHER].segsize);
+        return ompi_coll_tuned_allgather_intra_do_this(
+            sbuf, scount, sdtype, rbuf, rcount, rdtype, comm, module,
+            tuned_module->user_forced[ALLGATHER].algorithm,
+            tuned_module->user_forced[ALLGATHER].tree_fanout,
+            tuned_module->user_forced[ALLGATHER].segsize,
+            tuned_module->user_forced[ALLGATHER].bine_implementation);
     }
 
     if (tuned_module->com_rules[ALLGATHER]) {
         /* We have file based rules:
            - calculate message size and other necessary information */
         int comsize;
-        int alg, faninout, segsize, ignoreme;
+        int alg, faninout, segsize, ignoreme, bine_imp;
         size_t dsize;
 
         ompi_datatype_type_size (sdtype, &dsize);
         comsize = ompi_comm_size(comm);
         dsize *= (ptrdiff_t)comsize * (ptrdiff_t)scount;
 
-        alg = ompi_coll_tuned_get_target_method_params (tuned_module->com_rules[ALLGATHER],
-                                                        dsize, &faninout, &segsize, &ignoreme);
+        alg = ompi_coll_tuned_get_target_method_params(tuned_module->com_rules[ALLGATHER], dsize,
+                                                       &faninout, &segsize, &ignoreme, &bine_imp);
         if (alg) {
             /* we have found a valid choice from the file based rules for
                this message size */
-            return ompi_coll_tuned_allgather_intra_do_this (sbuf, scount, sdtype,
-                                                            rbuf, rcount, rdtype,
-                                                            comm, module,
-                                                            alg, faninout, segsize);
+            return ompi_coll_tuned_allgather_intra_do_this(sbuf, scount, sdtype, rbuf, rcount,
+                                                           rdtype, comm, module, alg, faninout,
+                                                           segsize, bine_imp);
         }
     }
 
@@ -562,7 +568,7 @@ int ompi_coll_tuned_allgatherv_intra_dec_dynamic(const void *sbuf, size_t scount
         /* We have file based rules:
            - calculate message size and other necessary information */
         int comsize, i;
-        int alg, faninout, segsize, ignoreme;
+        int alg, faninout, segsize, ignoreme, bine_imp;
         size_t dsize, total_size, per_rank_size;
 
         comsize = ompi_comm_size(comm);
@@ -572,8 +578,9 @@ int ompi_coll_tuned_allgatherv_intra_dec_dynamic(const void *sbuf, size_t scount
 
         per_rank_size = total_size / comsize;
 
-        alg = ompi_coll_tuned_get_target_method_params (tuned_module->com_rules[ALLGATHERV],
-                                                        per_rank_size, &faninout, &segsize, &ignoreme);
+        alg = ompi_coll_tuned_get_target_method_params(tuned_module->com_rules[ALLGATHERV],
+                                                       per_rank_size, &faninout, &segsize,
+                                                       &ignoreme, &bine_imp);
         if (alg) {
             /* we have found a valid choice from the file based rules for
                this message size */
@@ -618,15 +625,16 @@ int ompi_coll_tuned_gather_intra_dec_dynamic(const void *sbuf, size_t scount,
      * check to see if we have some filebased rules.
      */
     if (tuned_module->com_rules[GATHER]) {
-        int comsize, alg, faninout, segsize, max_requests;
+        int comsize, alg, faninout, segsize, max_requests, bine_imp;
         size_t dsize;
 
         comsize = ompi_comm_size(comm);
         ompi_datatype_type_size (sdtype, &dsize);
         dsize *= scount * comsize;
 
-        alg = ompi_coll_tuned_get_target_method_params (tuned_module->com_rules[GATHER],
-                                                        dsize, &faninout, &segsize, &max_requests);
+        alg = ompi_coll_tuned_get_target_method_params(tuned_module->com_rules[GATHER], dsize,
+                                                       &faninout, &segsize, &max_requests,
+                                                       &bine_imp);
 
         if (alg) {
             /* we have found a valid choice from the file based rules for this message size */
@@ -668,15 +676,16 @@ int ompi_coll_tuned_scatter_intra_dec_dynamic(const void *sbuf, size_t scount,
      * check to see if we have some filebased rules.
      */
     if (tuned_module->com_rules[SCATTER]) {
-        int comsize, alg, faninout, segsize, max_requests;
+        int comsize, alg, faninout, segsize, max_requests, bine_imp;
         size_t dsize;
 
         comsize = ompi_comm_size(comm);
         ompi_datatype_type_size (sdtype, &dsize);
         dsize *= scount * comsize;
 
-        alg = ompi_coll_tuned_get_target_method_params (tuned_module->com_rules[SCATTER],
-                                                        dsize, &faninout, &segsize, &max_requests);
+        alg = ompi_coll_tuned_get_target_method_params(tuned_module->com_rules[SCATTER], dsize,
+                                                       &faninout, &segsize, &max_requests,
+                                                       &bine_imp);
 
         if (alg) {
             /* we have found a valid choice from the file based rules for this message size */
@@ -714,15 +723,16 @@ int ompi_coll_tuned_exscan_intra_dec_dynamic(const void *sbuf, void* rbuf, size_
      * check to see if we have some filebased rules.
      */
     if (tuned_module->com_rules[EXSCAN]) {
-        int comsize, alg, faninout, segsize, max_requests;
+        int comsize, alg, faninout, segsize, max_requests, bine_imp;
         size_t dsize;
 
         comsize = ompi_comm_size(comm);
         ompi_datatype_type_size (dtype, &dsize);
         dsize *= comsize;
 
-        alg = ompi_coll_tuned_get_target_method_params (tuned_module->com_rules[EXSCAN],
-                                                        dsize, &faninout, &segsize, &max_requests);
+        alg = ompi_coll_tuned_get_target_method_params(tuned_module->com_rules[EXSCAN], dsize,
+                                                       &faninout, &segsize, &max_requests,
+                                                       &bine_imp);
 
         if (alg) {
             /* we have found a valid choice from the file based rules for this message size */
@@ -758,15 +768,16 @@ int ompi_coll_tuned_scan_intra_dec_dynamic(const void *sbuf, void* rbuf, size_t 
      * check to see if we have some filebased rules.
      */
     if (tuned_module->com_rules[SCAN]) {
-        int comsize, alg, faninout, segsize, max_requests;
+        int comsize, alg, faninout, segsize, max_requests, bine_imp;
         size_t dsize;
 
         comsize = ompi_comm_size(comm);
         ompi_datatype_type_size (dtype, &dsize);
         dsize *= comsize;
 
-        alg = ompi_coll_tuned_get_target_method_params (tuned_module->com_rules[SCAN],
-                                                        dsize, &faninout, &segsize, &max_requests);
+        alg = ompi_coll_tuned_get_target_method_params(tuned_module->com_rules[SCAN], dsize,
+                                                       &faninout, &segsize, &max_requests,
+                                                       &bine_imp);
 
         if (alg) {
             /* we have found a valid choice from the file based rules for this message size */
